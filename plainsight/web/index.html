@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PlainSight 明文透視</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <img src="/favicon.svg" alt="" width="34" height="34">
+    <div>
+      <h1>PlainSight <span>明文透視</span></h1>
+      <p>看看沒加密的流量，在中間人眼中長什麼樣子</p>
+    </div>
+  </div>
+  <div class="status">
+    <span id="mode" class="pill">—</span>
+    <span id="redact" class="pill">—</span>
+    <span id="conn" class="pill conn"><i></i><b>連線中…</b></span>
+  </div>
+  <div class="actions">
+    <button id="btn-pause" type="button">暫停</button>
+    <button id="btn-clear" type="button">清除畫面</button>
+    <button id="btn-export" type="button">匯出 JSON</button>
+    <button id="btn-help" type="button" class="primary">HTTPS 解密實驗</button>
+  </div>
+</header>
+
+<div class="ethics" role="note">
+  僅供教育與授權測試使用。未經同意擷取他人通訊，可能觸犯刑法妨害秘密罪與妨害電腦使用罪。
+</div>
+
+<section class="kpis" aria-label="統計">
+  <div class="kpi"><span class="kpi-label">已分析封包</span><span class="kpi-value" id="k-packets">0</span><span class="kpi-sub" id="k-bytes">0 B 應用層資料</span></div>
+  <div class="kpi critical"><span class="kpi-label">外洩帳號密碼</span><span class="kpi-value" id="k-cred">0</span><span class="kpi-sub">任何人都能直接登入</span></div>
+  <div class="kpi high"><span class="kpi-label">Cookie / 權杖</span><span class="kpi-value" id="k-session">0</span><span class="kpi-sub">可冒用登入狀態</span></div>
+  <div class="kpi info"><span class="kpi-label">被看到的網域</span><span class="kpi-value" id="k-domains">0</span><span class="kpi-sub">DNS 查詢 + TLS SNI</span></div>
+  <div class="kpi ratio">
+    <span class="kpi-label">連線加密比例</span>
+    <div class="ratio-bar" aria-hidden="true"><span id="r-enc"></span><span id="r-plain"></span></div>
+    <span class="kpi-sub"><b class="ok" id="r-enc-t">加密 0</b> · <b class="bad" id="r-plain-t">明文 0</b></span>
+  </div>
+</section>
+
+<main class="layout">
+  <section class="panel feed-panel">
+    <div class="panel-head">
+      <h2>即時發現</h2>
+      <span id="feed-count" class="muted"></span>
+    </div>
+    <div class="filters">
+      <div class="chips" id="sev-chips" role="group" aria-label="嚴重程度"></div>
+      <div class="filter-row">
+        <select id="proto" aria-label="協定"><option value="">所有協定</option></select>
+        <input id="search" type="search" placeholder="搜尋標題、網域、IP…" aria-label="搜尋">
+      </div>
+    </div>
+    <div id="feed" class="feed"></div>
+    <div id="empty" class="empty">等待流量中…</div>
+  </section>
+
+  <section class="panel detail-panel" id="detail" aria-live="polite">
+    <div class="placeholder">
+      <h2>點選左側任一筆發現</h2>
+      <p>這裡會顯示攻擊者看到的封包原文、被讀出的機密，以及「為什麼危險」和「怎麼防護」。</p>
+    </div>
+  </section>
+
+  <aside class="panel side">
+    <h2>協定分佈</h2>
+    <p class="muted small">每條 TCP 連線依協定分類；綠色代表內容有加密。</p>
+    <ul id="protos" class="proto-list"></ul>
+    <h2>圖例</h2>
+    <ul class="legend">
+      <li><span class="sev sev-critical">嚴重</span>帳號密碼直接外洩</li>
+      <li><span class="sev sev-high">高</span>Cookie、權杖、信件內容</li>
+      <li><span class="sev sev-medium">中</span>指令、檔名、表單資料</li>
+      <li><span class="sev sev-info">資訊</span>網址、網域等瀏覽足跡</li>
+    </ul>
+  </aside>
+</main>
+
+<dialog id="help">
+  <form method="dialog" class="dialog-close"><button aria-label="關閉">✕</button></form>
+  <h2>HTTPS 解密實驗：為什麼不能亂裝憑證</h2>
+  <p>HTTPS 能防止被竊聽，前提是你的裝置<strong>只信任正當的憑證機構</strong>。
+    一旦裝置被誘導安裝了攻擊者的根憑證（例如「免費 Wi-Fi 請安裝此描述檔」），中間人就能解密所有 HTTPS。
+    以下步驟讓你在<strong>自己的實驗裝置</strong>上重現這件事：</p>
+  <ol>
+    <li>安裝 mitmproxy：<code>pip install mitmproxy</code></li>
+    <li>啟動儀表板：<code>plainsight mitm</code>（其他模式也會接收）</li>
+    <li>另開終端機執行：<code id="addon-cmd">mitmdump -s mitm_addon.py --listen-port 8080</code></li>
+    <li>把實驗裝置的 HTTP 代理設為「這台電腦的 IP:8080」</li>
+    <li>在實驗裝置開啟 <code>http://mitm.it</code>，安裝並信任憑證</li>
+    <li>瀏覽任何 HTTPS 網站、用測試帳號登入 → 儀表板出現 <span class="badge mitm">MITM 解密</span></li>
+    <li><strong>實驗結束後，務必從裝置移除該憑證！</strong></li>
+  </ol>
+  <p class="muted">提示：有實作 Certificate Pinning 的 App（多數銀行 App）會拒絕連線，這正是正確的防護。</p>
+</dialog>
+
+<script src="/app.js"></script>
+</body>
+</html>

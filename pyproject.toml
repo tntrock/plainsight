@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "plainsight"
+version = "0.1.0"
+description = "PlainSight 明文透視 — an educational dashboard that shows what an eavesdropper sees in unencrypted traffic"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "tntrock" }]
+keywords = ["security", "education", "network", "mitm", "sniffer", "plaintext"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Topic :: Security",
+  "Topic :: System :: Networking :: Monitoring",
+  "Intended Audience :: Education",
+]
+dependencies = ["scapy>=2.5"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+mitm = ["mitmproxy>=10"]
+
+[project.scripts]
+plainsight = "plainsight.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/tntrock/plainsight"
+
+[tool.setuptools]
+packages = ["plainsight", "plainsight.analyzers"]
+
+[tool.setuptools.package-data]
+plainsight = ["web/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
