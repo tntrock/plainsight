@@ -39,10 +39,22 @@ MODES = {"demo": "示範模式", "pcap": "離線分析", "live": "即時擷取",
 
 
 def _console_safe() -> None:
+    if sys.platform == "win32":
+        try:  # a double-clicked exe gets a legacy code page console
+            import ctypes
+            ctypes.windll.kernel32.SetConsoleOutputCP(65001)
+            encoding = "utf-8"
+        except (AttributeError, OSError):
+            encoding = None
+    else:
+        encoding = None
     for stream in (sys.stdout, sys.stderr):
         try:
-            stream.reconfigure(errors="replace")
-        except AttributeError:
+            if encoding:
+                stream.reconfigure(encoding=encoding, errors="replace")
+            else:
+                stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError):
             pass
 
 
@@ -53,7 +65,16 @@ def _start_dashboard(args, mode: str, source: str) -> tuple[Hub, Engine, str]:
         "mode": mode, "mode_label": MODES[mode], "source": source, "version": __version__,
         "addon_path": str(Path(__file__).with_name("mitm_addon.py")),
     }
-    srv = make_server(hub, args.host, args.port, meta)
+    for port in range(args.port, args.port + 10):
+        try:
+            srv = make_server(hub, args.host, port, meta)
+            break
+        except OSError:  # port in use, e.g. a second copy is already running
+            continue
+    else:
+        raise SystemExit(f"埠號 {args.port}-{args.port + 9} 都被占用，請用 --port 指定其他埠號。")
+    if srv.server_address[1] != 8765 and mode == "mitm":
+        print(f"  [注意] 儀表板不在預設埠 8765，執行 mitmdump 前請設定 PLAINSIGHT_URL=http://127.0.0.1:{srv.server_address[1]}")
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     shown = "127.0.0.1" if args.host in ("0.0.0.0", "::") else args.host
     url = f"http://{shown}:{srv.server_address[1]}/"
@@ -218,8 +239,73 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+MENU = """
+  請選擇要做什麼：
+
+    1. 示範模式    播放內建模擬流量（推薦第一次使用、課堂展示）
+    2. 分析 pcap   開啟 Wireshark / tcpdump 錄下的封包檔
+    3. 即時擷取    擷取這台電腦網卡的流量（需 Npcap 與授權）
+    4. MITM 代理   搭配 mitmproxy 示範 HTTPS 被解密
+    5. 列出網卡
+    0. 離開
+
+  小技巧：把 .pcap / .pcapng 檔案直接拖到 PlainSight.exe 上就會開始分析。
+"""
+
+
+def _ask(prompt: str) -> str:
+    try:
+        return input(prompt).strip()
+    except EOFError:
+        return ""
+
+
+def interactive_argv() -> list[str] | None:
+    """Menu shown when the program is started without arguments (double-click)."""
+    print(BANNER.format(version=__version__))
+    print(MENU)
+    while True:
+        choice = _ask("  請輸入編號：")
+        if choice == "1":
+            return ["demo"]
+        if choice == "2":
+            path = _ask("  請輸入檔案路徑（也可以把檔案拖進這個視窗）：").strip('"').strip("'")
+            if path:
+                return ["pcap", path]
+        elif choice == "3":
+            cmd_ifaces(None)
+            iface = _ask("  網卡名稱（直接按 Enter 使用預設網卡）：").strip('"')
+            return ["live"] + (["-i", iface] if iface else [])
+        elif choice == "4":
+            return ["mitm"]
+        elif choice == "5":
+            cmd_ifaces(None)
+        elif choice in ("0", "q", "exit"):
+            return None
+
+
 def main(argv: list[str] | None = None) -> int:
     _console_safe()
+    interactive = False
+    if argv is None:
+        argv = sys.argv[1:]
+        if not argv:
+            interactive = True
+            argv = interactive_argv()
+            if argv is None:
+                return 0
+        elif len(argv) == 1 and not argv[0].startswith("-") and Path(argv[0]).is_file():
+            argv = ["pcap", argv[0]]  # a file dropped onto the exe
+            interactive = True
+    try:
+        return _run(argv)
+    finally:
+        if interactive and getattr(sys, "frozen", False):
+            print()
+            _ask("  按 Enter 關閉視窗…")  # keep errors readable before the console closes
+
+
+def _run(argv: list[str]) -> int:
     args = build_parser().parse_args(argv)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.WARNING,
                         format="%(levelname)s %(name)s: %(message)s")

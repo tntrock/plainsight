@@ -34,8 +34,18 @@ def feed_packet(engine: Engine, pkt) -> None:
         engine.feed_udp(ip.src, l4.sport, ip.dst, l4.dport, payload)
 
 
+def _load_layers() -> None:
+    # Scapy picks the link-layer decoder when a reader/socket is opened, from
+    # whatever layers are imported at that moment. Without these, every packet
+    # is decoded as Raw and nothing is found.
+    import scapy.layers.inet  # noqa: F401
+    import scapy.layers.inet6  # noqa: F401
+    import scapy.layers.l2  # noqa: F401
+
+
 def read_pcap(engine: Engine, path: str, realtime: bool = False,
               stop: threading.Event | None = None) -> int:
+    _load_layers()
     from scapy.utils import PcapReader
 
     count = 0
@@ -53,6 +63,7 @@ def read_pcap(engine: Engine, path: str, realtime: bool = False,
 
 
 def sniff_live(engine: Engine, iface: str | None, bpf: str | None) -> None:
+    _load_layers()
     from scapy.sendrecv import sniff
 
     sniff(iface=iface, filter=bpf, prn=lambda p: feed_packet(engine, p), store=False)

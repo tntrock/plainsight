@@ -30,7 +30,19 @@ PlainSight 分析經過你電腦的網路流量，把攻擊者能讀到的東西
 - 預設會**遮蔽機密**（只顯示頭尾字元），即時擷取前也會要求確認授權。
 - 課堂展示請優先使用 `demo` 模式——內建的模擬流量全部使用保留網域（`.example`）與文件專用 IP，不涉及任何真實個人資料。
 
-## 安裝
+## 下載 Windows 版（免安裝）
+
+到 [Releases](https://github.com/tntrock/plainsight/releases/latest) 下載 **`PlainSight.exe`**，雙擊即可：
+
+- 會出現選單：示範模式、分析 pcap、即時擷取、MITM 代理。
+- 把 `.pcap` / `.pcapng` 檔**拖到 PlainSight.exe 上**就會直接分析。
+- 也能在命令列使用，參數與下方 `plainsight` 指令完全相同，例如 `PlainSight.exe demo --loop`。
+
+> 首次執行若出現 SmartScreen「Windows 已保護您的電腦」，請按「其他資訊 → 仍要執行」——程式沒有付費的程式碼簽章。
+> 封包分析工具偶爾會被防毒軟體誤判；不放心的話可以用下方方式從原始碼執行，或自己建置 exe。
+> 即時擷取需另外安裝 [Npcap](https://npcap.com)。
+
+## 從原始碼安裝
 
 需要 Python 3.10 以上。
 
@@ -99,6 +111,14 @@ plainsight mitm                 # 搭配 mitmproxy 示範 HTTPS 被解密
 pip install -e ".[dev]"
 pytest
 ```
+
+自己建置 exe（Windows）：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File build.ps1   # 產生 dist\PlainSight.exe
+```
+
+發佈新版：更新 `plainsight/__init__.py` 與 `pyproject.toml` 的版本號，推送 `v*` 標籤（例如 `git tag v0.2.1 && git push origin v0.2.1`），GitHub Actions 會自動建置 exe 並建立 Release。
 
 歡迎 PR！特別歡迎：更多協定（SNMP、LDAP、Redis、MQTT…）、英文介面、更多教學情境。
 提交與「主動攻擊」相關的功能（ARP/DNS 欺騙、SSL strip 等）將不會被接受。

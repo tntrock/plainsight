@@ -69,6 +69,12 @@ def test_server_static_and_stats(server):
     assert _get(port, "/../pyproject.toml")[0] == 404
 
 
+def test_port_in_use_is_not_shared(server):
+    _, port = server
+    with pytest.raises(OSError):
+        make_server(Hub(), "127.0.0.1", port, {})
+
+
 def test_server_rejects_rebinding_host(server):
     _, port = server
     assert _get(port, "/api/stats", host=f"evil.example:{port}")[0] == 403

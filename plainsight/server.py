@@ -5,6 +5,8 @@ import base64
 import json
 import queue
 import secrets
+import socket
+import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -137,6 +139,17 @@ def make_server(hub: Hub, host: str, port: int, meta: dict) -> ThreadingHTTPServ
                 return self._send(400, f"bad request: {e}".encode(), "text/plain")
             self._json({"findings": n})
 
-    srv = ThreadingHTTPServer((host, port), Handler)
+    srv = _Server((host, port), Handler)
     srv.daemon_threads = True
     return srv
+
+
+class _Server(ThreadingHTTPServer):
+    # On Windows SO_REUSEADDR lets a second process bind the same port and
+    # silently steal connections; insist on exclusive use instead.
+    allow_reuse_address = sys.platform != "win32"
+
+    def server_bind(self) -> None:
+        if sys.platform == "win32":
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()

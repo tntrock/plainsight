@@ -44,3 +44,26 @@ def test_demo_pcap_roundtrip(tmp_path):
     wrpcap(str(path), all_packets())
     findings, _ = _run(lambda engine: read_pcap(engine, str(path)))
     _check(findings)
+
+
+def test_read_pcap_in_fresh_interpreter(tmp_path):
+    """Regression: reading a pcap before any scapy layer was imported decoded nothing."""
+    import subprocess
+    import sys
+    from scapy.utils import wrpcap
+
+    path = tmp_path / "demo.pcap"
+    wrpcap(str(path), all_packets())
+    code = ("import sys; from plainsight.engine import Engine; from plainsight.capture import read_pcap; "
+            "found = []; read_pcap(Engine(found.append), sys.argv[1]); print(len(found))")
+    out = subprocess.run([sys.executable, "-c", code, str(path)], capture_output=True, text=True, check=True)
+    assert int(out.stdout.strip()) > 20
+
+
+def test_cli_writes_demo_pcap(tmp_path):
+    from plainsight.cli import main
+
+    out = tmp_path / "d.pcap"
+    assert main(["demo", "--write-pcap", str(out)]) == 0
+    findings, _ = _run(lambda engine: read_pcap(engine, str(out)))
+    _check(findings)
