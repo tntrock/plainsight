@@ -150,6 +150,13 @@ def cmd_pcap(args) -> int:
 
 
 def cmd_live(args) -> int:
+    from . import interfaces
+
+    try:
+        names = interfaces.resolve(args.iface, interfaces.load())
+    except ValueError as e:
+        print(f"  {e}", file=sys.stderr)
+        return 2
     print(LIVE_WARNING)
     if not args.yes:
         try:
@@ -161,10 +168,10 @@ def cmd_live(args) -> int:
             return 1
     from .capture import sniff_live
 
-    _, engine, _ = _start_dashboard(args, "live", args.iface or "預設網卡")
-    print("  擷取中…（按 Ctrl+C 結束）")
+    _, engine, _ = _start_dashboard(args, "live", " + ".join(names) or "預設網卡")
+    print(f"  擷取中：{'、'.join(names) or '系統預設網卡'}（按 Ctrl+C 結束）")
     try:
-        sniff_live(engine, args.iface, args.bpf)
+        sniff_live(engine, names, args.bpf)
     except KeyboardInterrupt:
         pass
     except (PermissionError, OSError, RuntimeError) as e:
@@ -191,12 +198,16 @@ def cmd_mitm(args) -> int:
 
 
 def cmd_ifaces(args) -> int:
+    from . import interfaces
+
     try:
-        from scapy.all import conf
-        print(conf.ifaces)
+        found = interfaces.load()
     except Exception as e:
         print(f"無法列出網卡：{e}", file=sys.stderr)
         return 1
+    print()
+    print(interfaces.format_table(found, show_all=getattr(args, "all", False)))
+    print()
     return 0
 
 
@@ -225,7 +236,8 @@ def build_parser() -> argparse.ArgumentParser:
     r.set_defaults(func=cmd_pcap)
 
     lv = sub.add_parser("live", parents=[common], help="即時擷取網卡流量（需授權與管理員權限）")
-    lv.add_argument("-i", "--iface", help="網卡名稱（用 `plainsight ifaces` 查詢）")
+    lv.add_argument("-i", "--iface", action="append", metavar="網卡",
+                    help="網卡編號或名稱（用 `plainsight ifaces` 查詢）；多張可用逗號分隔或重複 -i")
     lv.add_argument("--bpf", default="tcp or udp port 53 or udp port 5353 or udp port 5355",
                     help="BPF 擷取過濾條件")
     lv.add_argument("--yes", action="store_true", help="略過授權確認提示")
@@ -235,6 +247,7 @@ def build_parser() -> argparse.ArgumentParser:
     m.set_defaults(func=cmd_mitm)
 
     i = sub.add_parser("ifaces", help="列出可擷取的網卡")
+    i.add_argument("--all", action="store_true", help="也顯示沒有 IP 的網卡與系統篩選驅動程式")
     i.set_defaults(func=cmd_ifaces)
     return p
 
@@ -260,6 +273,25 @@ def _ask(prompt: str) -> str:
         return ""
 
 
+def _pick_interfaces() -> list[str]:
+    from . import interfaces
+
+    found = interfaces.load()
+    print()
+    print(interfaces.format_table(found))
+    while True:
+        print()
+        answer = _ask("  要擷取哪張網卡？輸入編號（多張用逗號分隔，直接按 Enter 用預設網卡）：")
+        if not answer:
+            return []
+        try:
+            interfaces.resolve([answer], found)  # validate before leaving the menu
+        except ValueError as e:
+            print(f"  {e}")
+            continue
+        return ["-i", answer]
+
+
 def interactive_argv() -> list[str] | None:
     """Menu shown when the program is started without arguments (double-click)."""
     print(BANNER.format(version=__version__))
@@ -273,9 +305,7 @@ def interactive_argv() -> list[str] | None:
             if path:
                 return ["pcap", path]
         elif choice == "3":
-            cmd_ifaces(None)
-            iface = _ask("  網卡名稱（直接按 Enter 使用預設網卡）：").strip('"')
-            return ["live"] + (["-i", iface] if iface else [])
+            return ["live"] + _pick_interfaces()
         elif choice == "4":
             return ["mitm"]
         elif choice == "5":

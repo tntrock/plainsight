@@ -45,9 +45,11 @@ plainsight demo --write-pcap demo.pcap
 3. 用**自己的實驗手機**連上這個熱點。
 4. 以**系統管理員**身分開啟終端機：
    ```powershell
-   plainsight ifaces                       # 找出熱點網卡，名稱通常類似「Local Area Connection* 10」
-   plainsight live -i "Local Area Connection* 10"
+   plainsight ifaces          # 熱點網卡會標示為「行動熱點」，IP 通常是 192.168.137.1
+   plainsight live -i 2       # 用上一步看到的編號
    ```
+   也可以直接雙擊 PlainSight.exe → 選 3「即時擷取」，從清單輸入編號。
+   想同時看熱點與電腦本身的流量，可輸入多個編號，例如 `-i 1,2`。
 5. 在手機上瀏覽 HTTP 測試網站（例如 `http://testphp.vulnweb.com`、`http://neverssl.com`），並用**假帳號**登入。
 
 ### Linux

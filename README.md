@@ -62,8 +62,9 @@ pip install -e .
 plainsight demo                 # 播放內建模擬流量（最推薦的入門方式）
 plainsight demo --loop          # 重複播放，適合展場或課堂背景
 plainsight pcap capture.pcapng  # 分析 Wireshark / tcpdump 錄下的檔案
-plainsight ifaces               # 列出網卡
-plainsight live -i "Wi-Fi"      # 即時擷取（需授權與管理員權限）
+plainsight ifaces               # 列出網卡（附編號、類型與 IP）
+plainsight live -i 2            # 即時擷取第 2 張網卡（需授權與管理員權限）
+plainsight live -i 1,2          # 同時擷取多張網卡，例如熱點 + 乙太網路
 plainsight mitm                 # 搭配 mitmproxy 示範 HTTPS 被解密
 ```
 
@@ -76,6 +77,8 @@ plainsight mitm                 # 搭配 mitmproxy 示範 HTTPS 被解密
 | `--no-browser` | 不自動開瀏覽器 |
 | `demo --speed 2` | 兩倍速播放 |
 | `demo --write-pcap demo.pcap` | 把示範流量存成 pcap，可用 Wireshark 對照 |
+| `live -i 名稱或編號` | 選擇網卡，可用逗號分隔或重複 `-i` 指定多張 |
+| `ifaces --all` | 也列出沒有 IP 的網卡與系統篩選驅動程式 |
 | `live --bpf "tcp port 80"` | 自訂擷取過濾條件 |
 
 ## 實驗情境

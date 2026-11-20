@@ -62,8 +62,10 @@ def read_pcap(engine: Engine, path: str, realtime: bool = False,
     return count
 
 
-def sniff_live(engine: Engine, iface: str | None, bpf: str | None) -> None:
+def sniff_live(engine: Engine, ifaces: list[str] | None, bpf: str | None) -> None:
+    """Capture on one or several interfaces (None = system default)."""
     _load_layers()
     from scapy.sendrecv import sniff
 
+    iface = ifaces[0] if ifaces and len(ifaces) == 1 else (ifaces or None)
     sniff(iface=iface, filter=bpf, prn=lambda p: feed_packet(engine, p), store=False)
