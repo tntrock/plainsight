@@ -106,7 +106,7 @@ class SmtpAnalyzer(LineAnalyzer):
             kind="email", severity="high",
             title=f"明文電子郵件：{subject or '(無主旨)'}",
             secrets={"body": body[:1000]}, details=details,
-            excerpt="\n".join(self.data_lines[:60]), excerpt_sensitive=True,
+            excerpt="\n".join(self.data_lines[:60]),
         )
 
 

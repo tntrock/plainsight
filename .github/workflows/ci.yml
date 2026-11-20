@@ -20,4 +20,9 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: pip install -e ".[dev]"
       - run: pytest -q
-      - run: plainsight demo --write-pcap demo.pcap
+      - name: Smoke test the CLI on a sample capture
+        shell: bash
+        run: |
+          python tests/traffic.py lab.pcap
+          plainsight pcap lab.pcap --report | tee report.txt
+          grep -q "Sup3rS3cret!" report.txt

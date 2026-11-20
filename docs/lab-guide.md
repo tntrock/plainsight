@@ -5,45 +5,16 @@
 
 ---
 
-## 實驗 0：示範模式（課堂首選）
-
-```bash
-plainsight demo --speed 0.5      # 放慢一點，邊播邊講解
-```
-
-終端機會依序顯示 10 個情境的旁白，儀表板同步出現對應的發現：
-
-| # | 情境 | 想讓學生看到的重點 |
-|---|---|---|
-| 1 | 在 HTTP 論壇登入 | 表單密碼原文、Session Cookie 被看到就能冒用 |
-| 2 | 路由器管理頁 Basic 認證 | Base64 是編碼不是加密 |
-| 3 | 用 HTTPS 開網路銀行 | 內容加密了，但 DNS 與 SNI 仍透露「你去了哪」 |
-| 4 | FTP 下載報表 | 帳密與檔名全部明文 |
-| 5 | SMTP 寄信 | 信件內容（含信中的 VPN 密碼）全部可讀 |
-| 6 | Telnet 登入交換器 | 每個按鍵都是一個封包，密碼一樣逐字外洩 |
-| 7 | POP3 / IMAP 收信 | 老協定的明文登入 |
-| 8 | STARTTLS（對照組） | 正確升級加密後，後續內容就看不到了 |
-| 9 | 健身 App 走 HTTP | App 也會犯錯：權杖與 GPS 定位外洩 |
-| 10 | 一般 HTTPS 瀏覽 | 對照：只看得到網域 |
-
-想在 Wireshark 對照同一批封包：
-
-```bash
-plainsight demo --write-pcap demo.pcap
-```
-
----
-
 ## 實驗 1：讓電腦成為中繼節點（行動熱點）
 
 這個實驗重現「惡意熱點 / 咖啡廳 Wi-Fi 業者」的視角：所有連上熱點的裝置流量都會經過你的電腦。
 
 ### Windows
 
-1. 安裝 [Npcap](https://npcap.com)（使用預設選項即可）。
+1. （選用）安裝 Npcap：PlainSight 選單選「安裝 Npcap」。不裝也可以，程式會改用 Windows 內建擷取並要求系統管理員權限。
 2. 設定 → 網路和網際網路 → 行動熱點 → 開啟。
 3. 用**自己的實驗手機**連上這個熱點。
-4. 以**系統管理員**身分開啟終端機：
+4. 開啟終端機（或直接雙擊 PlainSight.exe 選「即時擷取」）：
    ```powershell
    plainsight ifaces          # 熱點網卡會標示為「行動熱點」，IP 通常是 192.168.137.1
    plainsight live -i 2       # 用上一步看到的編號
@@ -108,6 +79,7 @@ HTTPS 的安全建立在「裝置只信任正當的憑證機構」上。這個�
 ```bash
 plainsight pcap capture.pcapng
 plainsight pcap capture.pcapng --realtime   # 依照原本的時間間隔播放
+plainsight pcap capture.pcapng --report     # 不開儀表板，直接列出結果
 ```
 
 可使用：
@@ -124,8 +96,9 @@ plainsight pcap capture.pcapng --realtime   # 依照原本的時間間隔播放
 正常。交換器只把封包送到目的地的連接埠，Wi-Fi 的每個裝置也有各自的加密金鑰。要看到別人的流量，
 必須成為中繼節點（熱點、路由器、代理），或用 ARP 欺騙等主動攻擊——後者 PlainSight 刻意不提供。
 
-**Q：Windows 出現 `No libpcap provider available`？**
-請安裝 [Npcap](https://npcap.com)，並以系統管理員身分執行。
+**Q：沒有安裝 Npcap 可以擷取嗎？**
+可以。PlainSight 會改用 Windows 內建的原始通訊端擷取（只有 IPv4，需要系統管理員權限，程式會跳出 UAC 詢問）。
+需要 IPv6 或完整乙太網路封包時，再從選單安裝 Npcap 即可。
 
 **Q：可以讓別台電腦看儀表板嗎？**
-可以用 `--host 0.0.0.0`，但同網段的任何人都能看到擷取結果，請只在受控的教室網路使用，並保持遮蔽模式開啟。
+可以用 `--host 0.0.0.0`，但同網段的任何人都能看到擷取到的完整帳號密碼，請只在受控的教室網路使用。

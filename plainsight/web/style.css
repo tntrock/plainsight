@@ -212,7 +212,6 @@ code.secret {
   color: #ffdcd7; background: #f8514926; border: 1px dashed #f8514988;
   padding: 1px 6px; border-radius: 4px; font-size: 13px;
 }
-.redact-note { font-size: 12px; color: var(--muted); margin-top: 6px; }
 
 pre.excerpt {
   background: #010409; border: 1px solid var(--border); border-radius: 8px;

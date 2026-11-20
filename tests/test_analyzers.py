@@ -115,7 +115,6 @@ def test_smtp_auth_login_and_email():
     [mail] = w.kinds("email")
     assert mail.details["主旨"] == "hello"
     assert "body text" in mail.secrets["body"]
-    assert mail.excerpt_sensitive
 
 
 def test_smtp_auth_plain_inline():

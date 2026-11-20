@@ -88,7 +88,7 @@ def make_server(hub: Hub, host: str, port: int, meta: dict) -> ThreadingHTTPServ
             if path == "/api/findings":
                 return self._json(hub.snapshot())
             if path == "/api/stats":
-                return self._json({**hub.stats.snapshot(), **meta, "redacted": not hub.show_secrets})
+                return self._json({**hub.stats.snapshot(), **meta})
             if path == "/events":
                 return self._events()
             self._send(404, b"not found", "text/plain")

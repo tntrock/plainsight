@@ -23,8 +23,10 @@ jobs:
         shell: pwsh
         run: |
           ./dist/PlainSight.exe --version
-          ./dist/PlainSight.exe demo --write-pcap demo.pcap
-          if (-not (Test-Path demo.pcap)) { throw "exe did not write demo.pcap" }
+          python tests/traffic.py lab.pcap
+          $report = ./dist/PlainSight.exe pcap lab.pcap --report | Out-String
+          Write-Output $report
+          if ($report -notmatch "Sup3rS3cret!") { throw "exe did not find the test password" }
       - name: Publish release
         shell: pwsh
         env:
@@ -39,7 +41,7 @@ jobs:
           **PlainSight.exe**：Windows 10/11 64 位元，免安裝，雙擊即可執行。
 
           - 第一次執行若出現 SmartScreen「Windows 已保護您的電腦」，請按「其他資訊 → 仍要執行」（本程式未經程式碼簽章）。
-          - 即時擷取需另外安裝 [Npcap](https://npcap.com)；示範模式與 pcap 分析不需要。
+          - 即時擷取可直接使用 Windows 內建方式（需系統管理員）；選單中的「安裝 Npcap」可一鍵從官網安裝以取得完整功能。
           - SHA256：``$hash``
 
           僅供教育與授權測試使用，請先閱讀 README 的「使用前必讀」。

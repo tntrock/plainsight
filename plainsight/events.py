@@ -23,13 +23,9 @@ class Finding:
     secrets: dict[str, str] = field(default_factory=dict)
     details: dict[str, str] = field(default_factory=dict)
     excerpt: str = ""
-    # The excerpt contains free text (e.g. an email body) that cannot be
-    # reliably masked piece by piece, so it is withheld when redacting.
-    excerpt_sensitive: bool = False
     # True when the data travelled over TLS and was decrypted by a MITM proxy.
     encrypted_channel: bool = False
     # Findings with the same non-empty dedup key are only reported once.
-    # Never sent to the dashboard: it may contain secret values.
     dedup: str = ""
     ts: float = field(default_factory=time.time)
     id: int = field(default_factory=lambda: next(_ids))
@@ -48,7 +44,6 @@ class Finding:
             "details": dict(self.details),
             "excerpt": self.excerpt,
             "encrypted_channel": self.encrypted_channel,
-            "redacted": False,
         }
 
 

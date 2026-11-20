@@ -52,7 +52,7 @@ def parse_client_hello(hs: bytes) -> dict | None:
 
 
 def build_client_hello(sni: str, alpn: tuple[str, ...] = ("h2", "http/1.1")) -> bytes:
-    """A minimal but valid TLS 1.3 ClientHello record (used by the demo and tests)."""
+    """A minimal but valid TLS 1.3 ClientHello record (used by tests)."""
     name = sni.encode()
     sni_ext = struct.pack("!HHHBH", EXT_SNI, len(name) + 5, len(name) + 3, 0, len(name)) + name
     protos = b"".join(bytes([len(a)]) + a.encode() for a in alpn)

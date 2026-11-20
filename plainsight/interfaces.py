@@ -85,11 +85,16 @@ def load() -> list[Iface]:
 
 def resolve(specs: list[str] | None, ifaces: list[Iface]) -> list[str]:
     """Turn user input ('2', '1,3', '乙太網路') into Scapy interface names."""
+    return [i.name for i in pick(specs, ifaces)]
+
+
+def pick(specs: list[str] | None, ifaces: list[Iface]) -> list[Iface]:
+    """Like resolve(), but returns the Iface objects."""
     if not specs:
         return []
-    by_number = {i.number: i.name for i in ifaces if i.number}
-    by_name = {i.name.lower(): i.name for i in ifaces}
-    names: list[str] = []
+    by_number = {i.number: i for i in ifaces if i.number}
+    by_name = {i.name.lower(): i for i in ifaces}
+    names: list[Iface] = []
     for spec in specs:
         spec = spec.strip().strip('"').strip("'")
         # An exact name wins, so a name that happens to contain a comma still works.
@@ -103,7 +108,7 @@ def resolve(specs: list[str] | None, ifaces: list[Iface]) -> list[str]:
                 names.append(by_name[part.lower()])
             else:
                 raise ValueError(f"找不到網卡「{part}」，請用 `plainsight ifaces` 查看編號與名稱")
-    return list(dict.fromkeys(names))  # drop duplicates, keep order
+    return list({i.name: i for i in names}.values())  # drop duplicates, keep order
 
 
 def _width(s: str) -> int:

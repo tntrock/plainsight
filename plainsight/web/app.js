@@ -236,8 +236,14 @@ function select(id) {
   if (f) renderDetail(f);
 }
 
+// Form bodies carry values URL-encoded ("p@ss!" is "p%40ss%21" on the wire).
+function wireForms(v) {
+  const strict = encodeURIComponent(v).replace(/[!'()*]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase());
+  return [v, encodeURIComponent(v), strict, strict.replace(/%20/g, "+")];
+}
+
 function highlight(text, needles) {
-  needles = [...new Set(needles)].filter((n) => n && n.length >= 3 && !/^\*+$/.test(n))
+  needles = [...new Set(needles.flatMap(wireForms))].filter((n) => n && n.length >= 3)
     .sort((a, b) => b.length - a.length);
   const out = [];
   let i = 0;
@@ -285,8 +291,6 @@ function renderDetail(f) {
     secrets.length ? [
       el("h3", {}, "被讀出的機密"),
       kvTable(Object.fromEntries(secrets), (v) => el("code", { class: "secret" }, v)),
-      f.redacted ? el("p", { class: "redact-note" },
-        "目前為遮蔽模式，機密只顯示頭尾字元——但攻擊者看到的是完整內容。") : null,
     ] : null,
     Object.keys(details).length ? [el("h3", {}, "詳細資訊"), kvTable(details, (v) => v)] : null,
     f.excerpt ? [
@@ -333,8 +337,6 @@ function renderStats(s) {
   if (!metaShown) {
     metaShown = true;
     $("mode").textContent = `${s.mode_label}${s.source ? "・" + s.source : ""}`;
-    $("redact").textContent = s.redacted ? "機密遮蔽中" : "顯示完整機密";
-    $("redact").className = `pill ${s.redacted ? "safe" : "warn"}`;
     $("addon-cmd").textContent = `mitmdump -s "${s.addon_path}" --listen-port 8080`;
   }
 }

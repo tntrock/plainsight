@@ -6,14 +6,12 @@ import threading
 from collections import deque
 
 from .events import Finding, Stats
-from .redact import redact
 
 
 class Hub:
     MAX_DEDUP = 100_000
 
-    def __init__(self, show_secrets: bool = False, max_items: int = 5000) -> None:
-        self.show_secrets = show_secrets
+    def __init__(self, max_items: int = 5000) -> None:
         self.stats = Stats()
         self._lock = threading.Lock()
         self._items: deque[dict] = deque(maxlen=max_items)
@@ -21,7 +19,7 @@ class Hub:
         self._subs: set[queue.Queue] = set()
 
     def publish(self, finding: Finding) -> bool:
-        data = finding.to_dict() if self.show_secrets else redact(finding)
+        data = finding.to_dict()
         with self._lock:
             if finding.dedup:
                 if finding.dedup in self._seen:
